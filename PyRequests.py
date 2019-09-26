@@ -12,6 +12,7 @@ import PyCommon as cfg
 
 def handle_request(header):
     feedback = {}
+    file_range = []
     response = cfg.HttpVersion
     header = header.split('\n')
     #for i in header:
@@ -23,11 +24,18 @@ def handle_request(header):
     if '?' in common[1]:
       common[1] = common[1].split('?')[0]
     
-    result = handle_file(common[1], common[0])
+    for i in header:
+      if "Range:" in i:
+        print(i)
+        file_range.append(int(i.split('bytes=')[1].split('-')[0]))
+        file_range.append(int(i.split('bytes=')[1].split('-')[1][:-1]))
+        break
+
+    result = handle_file(common[1], common[0], file_range)
     response += " %s %s\n" %(result['code'], cfg.CodeList[result['code']])
     response += "Server: %s %s\n" %(cfg.ServerName, cfg.ServerVer)
     response += "Date: %s\n" % time.strftime('%a, %d %b %Y %H:%M:%S GMT' ,time.gmtime())
-    #对用户请求头进行处理
+
     feedback['keep'] = False
     for i in header:
       if "Connection:" in i and 'keep-alive'in i.split(': ')[1]:
@@ -35,13 +43,18 @@ def handle_request(header):
         response += "Connection: keep-alive\n"
     
     response += "Content-Type: %s\n" % result['type']
+    if result['options']:
+      for option in result['options']:
+        response += option
     response += "Content-Length: %s\n\n" % result['size']
+
     response = response.encode('utf-8')
     response += result['data']
     return feedback, response
 
-def handle_file(path, method):
+def handle_file(path, method, file_range):
     file_info = {}
+    file_info['options'] = []
     path = 'html' + path
     if os.path.isdir(path):
         path = os.path.join(path, 'index.html')
@@ -53,13 +66,33 @@ def handle_file(path, method):
     else:
       if os.access(path, os.R_OK):
         file_info['code'] = 200
-        file_info['size'] = os.path.getsize(path)
-        file_info['type'] = mimetypes.guess_type(path)[0] + "; charset=%s" %cfg.CharSet
+        
+        if file_range:
+          file_info['size'] =  file_range[1] - file_range[0] + 1
+        else:
+          file_info['size'] = os.path.getsize(path)
+        file_info['real_size'] = os.path.getsize(path)
+
+        mime = mimetypes.guess_type(path)[0]
+        if  mime != "text/html":
+          file_info['options'].append("Accept-Ranges: bytes\n")
+          if 'text' in mime:
+            file_info['type'] = mimetypes.guess_type(path)[0] + "; charset=%s" %cfg.CharSet
+          else:
+            file_info['type'] = mimetypes.guess_type(path)[0]
+        else:
+          file_info['type'] = mimetypes.guess_type(path)[0] + "; charset=%s" %cfg.CharSet
+
         if method == 'HEAD':
           file_info['data'] = b''
         else:
           with open(path, 'rb') as f:
-            file_info['data'] = f.read()
+            if file_range:
+              f.seek(file_range[0])
+              file_info['data'] = f.read(file_range[1] + 1)
+              file_info['options'].append("Content-Range: bytes %s-%s/%s\n" %(file_range[0], file_range[1], file_info['real_size']))
+            else:
+              file_info['data'] = f.read()
       else:
         file_info['code'] = 403
         file_info['size'] = len(cfg.Forbidden)

@@ -10,8 +10,9 @@ TimeOut     = 60
 
 CodeList = {
     200 : "OK",
-    403 : "Forbidden",
-    404 : "NotFound"
+    206 : "PARTIAL CONTENT",
+    403 : "FORBIDDEN",
+    404 : "NOT FOUND"
 }
 
 Forbidden = '''
