@@ -7,12 +7,15 @@
 import time
 import gevent
 import threading
+import etag_cache
 import PyRequests
 import PyCommon as cfg
 from gevent import socket, monkey
 from multiprocessing import Process
 
 monkey.patch_all()
+
+info_cache = etag_cache.PaiCache()
 
 #连接管理器类
 class ConnectionManager():
@@ -82,7 +85,7 @@ class RunCore():
             if not result:
                 cli_sock.close()
                 break
-            feedback, data = PyRequests.handle_request(result)
+            feedback, data = PyRequests.handle_request(result, info_cache)
             cli_sock.sendall(data)
             #无需保持连接
             if not feedback['keep']:

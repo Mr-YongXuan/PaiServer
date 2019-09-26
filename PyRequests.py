@@ -8,9 +8,10 @@
 import os
 import time
 import mimetypes
+
 import PyCommon as cfg
 
-def handle_request(header):
+def handle_request(header, info_cache):
     feedback = {}
     file_range = []
     response = cfg.HttpVersion
@@ -30,7 +31,7 @@ def handle_request(header):
         file_range.append(int(i.split('bytes=')[1].split('-')[1][:-1]))
         break
 
-    result = handle_file(common[1], common[0], file_range)
+    result = handle_file(common[1], common[0], file_range, info_cache)
     response += " %s %s\n" %(result['code'], cfg.CodeList[result['code']])
     response += "Server: %s %s\n" %(cfg.ServerName, cfg.ServerVer)
     response += "Date: %s\n" % time.strftime('%a, %d %b %Y %H:%M:%S GMT' ,time.gmtime())
@@ -51,7 +52,7 @@ def handle_request(header):
     response += result['data']
     return feedback, response
 
-def handle_file(path, method, file_range):
+def handle_file(path, method, file_range, info_cache):
     file_info = {}
     file_info['options'] = []
     path = 'html' + path
@@ -74,7 +75,11 @@ def handle_file(path, method, file_range):
 
         mime = mimetypes.guess_type(path)[0]
         if  mime != "text/html":
+          etag = info_cache.getFileInfo(path)
           file_info['options'].append("Accept-Ranges: bytes\n")
+          file_info['options'].append('Last-Modified: %s\n' % etag[1])
+          file_info['options'].append('ETag: "%s"\n' % etag[0])
+
           if 'text' in mime:
             file_info['type'] = mimetypes.guess_type(path)[0] + "; charset=%s" %cfg.CharSet
           else:
