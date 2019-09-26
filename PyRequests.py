@@ -26,7 +26,6 @@ def handle_request(header):
     
     for i in header:
       if "Range:" in i:
-        print(i)
         file_range.append(int(i.split('bytes=')[1].split('-')[0]))
         file_range.append(int(i.split('bytes=')[1].split('-')[1][:-1]))
         break
@@ -38,7 +37,7 @@ def handle_request(header):
 
     feedback['keep'] = False
     for i in header:
-      if "Connection:" in i and 'keep-alive'in i.split(': ')[1]:
+      if "Connection:" in i and 'keep-alive'in i.split(':')[1]:
         feedback['keep'] = True
         response += "Connection: keep-alive\n"
     
@@ -88,6 +87,7 @@ def handle_file(path, method, file_range):
         else:
           with open(path, 'rb') as f:
             if file_range:
+              file_info['code'] = 206
               f.seek(file_range[0])
               file_info['data'] = f.read(file_range[1] + 1)
               file_info['options'].append("Content-Range: bytes %s-%s/%s\n" %(file_range[0], file_range[1], file_info['real_size']))
