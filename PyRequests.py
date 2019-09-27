@@ -16,8 +16,6 @@ def handle_request(header, info_cache):
     file_range = []
     response = cfg.HttpVersion
     header = header.split('\n')
-    #for i in header:
-    #  print(i)
     common = header[0].split(' ')
     print("method:%s resource:%s version:%s" %(common[0], common[1], common[2]))
 
@@ -37,6 +35,7 @@ def handle_request(header, info_cache):
     response += "Date: %s\n" % time.strftime('%a, %d %b %Y %H:%M:%S GMT' ,time.gmtime())
 
     feedback['keep'] = False
+    feedback['EndFile'] = False
     for i in header:
       if "Connection:" in i and 'keep-alive'in i.split(':')[1]:
         feedback['keep'] = True
@@ -49,7 +48,11 @@ def handle_request(header, info_cache):
     response += "Content-Length: %s\n\n" % result['size']
 
     response = response.encode('utf-8')
-    response += result['data']
+    if result['data'] == b'Pai*EndFilePoint*Pai':
+      feedback['EndFile'] = True
+      feedback['path'] = result['path']
+    else:
+      response += result['data']
     return feedback, response
 
 def handle_file(path, method, file_range, info_cache):
@@ -73,6 +76,10 @@ def handle_file(path, method, file_range, info_cache):
           file_info['size'] = os.path.getsize(path)
         file_info['real_size'] = os.path.getsize(path)
 
+        if file_range:
+              file_info['code'] = 206
+              file_info['options'].append("Content-Range: bytes %s-%s/%s\n" %(file_range[0], file_range[1], file_info['real_size']))
+
         mime = mimetypes.guess_type(path)[0]
         if  mime != "text/html":
           etag = info_cache.getFileInfo(path)
@@ -92,12 +99,14 @@ def handle_file(path, method, file_range, info_cache):
         else:
           with open(path, 'rb') as f:
             if file_range:
-              file_info['code'] = 206
               f.seek(file_range[0])
               file_info['data'] = f.read(file_range[1] + 1)
-              file_info['options'].append("Content-Range: bytes %s-%s/%s\n" %(file_range[0], file_range[1], file_info['real_size']))
             else:
-              file_info['data'] = f.read()
+              if file_info['size'] >= cfg.MaxFileSize:
+                file_info['data'] = b'Pai*EndFilePoint*Pai'
+                file_info['path'] = path
+              else:
+                file_info['data'] = f.read()
       else:
         file_info['code'] = 403
         file_info['size'] = len(cfg.Forbidden)

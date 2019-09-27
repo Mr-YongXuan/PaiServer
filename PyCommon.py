@@ -8,6 +8,10 @@ CharSet     = "UTF-8"
 
 TimeOut     = 60
 
+MaxFileSize = 52428800
+
+SplitFileSize = 4096
+
 CodeList = {
     200 : "OK",
     206 : "PARTIAL CONTENT",

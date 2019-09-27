@@ -86,7 +86,19 @@ class RunCore():
                 cli_sock.close()
                 break
             feedback, data = PyRequests.handle_request(result, info_cache)
-            cli_sock.sendall(data)
+            if feedback['EndFile']:
+                try:
+                    with open(feedback['path'], 'rb') as f:
+                        cli_sock.sendall(data + f.read(cfg.SplitFileSize))
+                        while True:
+                            data = f.read(cfg.SplitFileSize)
+                            cli_sock.sendall(data)
+                            if len(data) < cfg.SplitFileSize:
+                                break
+                except:
+                    cli_sock.close()
+            else:
+                cli_sock.sendall(data)
             #无需保持连接
             if not feedback['keep']:
                 cm.del_connection(cli_sock)
