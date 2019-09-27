@@ -7,15 +7,15 @@
 import time
 import gevent
 import threading
-import etag_cache
-import PyRequests
-import PyCommon as cfg
+import PaiFileCache
+import PaiRequest
+import PaiCommon as cfg
 from gevent import socket, monkey
 from multiprocessing import Process
 
 monkey.patch_all()
 
-info_cache = etag_cache.PaiCache()
+info_cache = PaiFileCache.PaiCache()
 
 #连接管理器类
 class ConnectionManager():
@@ -85,7 +85,7 @@ class RunCore():
             if not result:
                 cli_sock.close()
                 break
-            feedback, data = PyRequests.handle_request(result, info_cache)
+            feedback, data = PaiRequest.handle_request(result, info_cache)
             if feedback['EndFile']:
                 try:
                     with open(feedback['path'], 'rb') as f:

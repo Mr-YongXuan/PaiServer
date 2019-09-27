@@ -9,7 +9,7 @@ import os
 import time
 import mimetypes
 
-import PyCommon as cfg
+import PaiCommon as cfg
 
 def handle_request(header, info_cache):
     feedback = {}

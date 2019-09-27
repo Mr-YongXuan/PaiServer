@@ -5,6 +5,6 @@
  * Description:PaiServer
 '''
 
-import PyCore
+import PaiCore
 
-run = PyCore.RunCore(8, '127.0.0.1', 80)
+run = PaiCore.RunCore(8, '127.0.0.1', 80)
