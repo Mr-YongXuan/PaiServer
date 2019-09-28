@@ -2,19 +2,35 @@ HttpVersion = "HTTP/1.1"
 
 Processes   = 8
 
-HostName    = "localhost"
+HttpServer  = {
+  "HttpServer01" : {
+    "BindDomain"  : ['localhost'],
+    "BindAddress" : "127.0.0.1",
+    "DefaultPort" :  80,
+    "IndexPage"   : ["index.html", "index.htm"],
+    "RootPath"    : "html"
+    #"Https"      : {
+    #  "cert_pem" : "xxx.pem",
+    #  "cert_key" : "xxx.key"
+    # } 
+  },
 
-BindAddress = "127.0.0.1"
-
-DefaultPort =  80
-
-IndexPage   = ["index.html", "index.htm"]
-
-RootPath    = "html"
+    "HttpServer02" : {
+    "BindDomain"  : ['localhost'],
+    "BindAddress" : "127.0.0.1",
+    "DefaultPort" :  443,
+    "IndexPage"   : ["index.html", "index.htm"],
+    "RootPath"    : "html/aaa",
+    #"Https"      : {
+    #  "cert_pem" : "xxx.pem",
+    #  "cert_key" : "xxx.key"
+    # }
+  }
+}
 
 ServerName  = "PaiServer"
 
-ServerVer   = "0.0.1 Alpha" 
+ServerVer   = "0.0.1 Alpha"
 
 #默认MIME类型为text的数据编码格式
 CharSet     = "UTF-8"

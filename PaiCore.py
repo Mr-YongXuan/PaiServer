@@ -5,6 +5,7 @@
  * Description:PyServer网络核心库
 '''
 
+import ssl
 import time
 import gevent
 import threading
@@ -53,30 +54,36 @@ class ConnectionManager():
 #运行核心类
 class RunCore():
 
-    def __init__(self, counter, host, port):
+    def __init__(self, counter, config):
+        
         self.sock = socket.socket()
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        self.sock.bind((cfg.HttpServer[config]['BindAddress'], cfg.HttpServer[config]['DefaultPort']))
 
-        self.sock.bind((host, port))
+#待确认
+#        if "Https" in cfg.HttpServer[config]:
+#            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+#            context.load_cert_chain(cfg.HttpServer[config]["Https"]["cert_pem"],
+#            cfg.HttpServer[config]["Https"]["cert_key"])
+#            self.sock = context.wrap_socket(self.sock, server_side = True)
+
         self.sock.listen(24511)
         
         for process_id in range(counter):
-            p1 = Process(target=self.handle_process, args=(self.sock, process_id, ))
-            p1.start()
-        print("Server started at http://%s:%s Running core:%s" %(host, port, counter))
+            Process(target=self.handle_process, args=(self.sock, process_id, config)).start()
+        print("Server started at http://%s:%s Running core:%s" %(cfg.HttpServer[config]['BindAddress'], cfg.HttpServer[config]['DefaultPort'], counter))
 
-
-    def handle_process(self, main_sock, pid):
+    def handle_process(self, main_sock, pid, config):
         manager = ConnectionManager()
         while True:
             cli_sock, cli_addr = main_sock.accept()
             manager.add_connection(cli_sock)
             #print("Process %s:New connection: %s:%s" %(pid, cli_addr[0], cli_addr[1]))
-            gevent.spawn(self.handle_coroutines, cli_sock, pid, manager)
+            gevent.spawn(self.handle_coroutines, cli_sock, pid, manager, config)
 
 #用户请求处理协程,每个用户都会有一个协程为其服务
-    def handle_coroutines(self, cli_sock, pid, cm):
+    def handle_coroutines(self, cli_sock, pid, cm, config):
         while True:
             #当连接管理进程断开连接后,recv将会异常抛出
             try:
@@ -86,7 +93,7 @@ class RunCore():
             if not result:
                 cli_sock.close()
                 break
-            feedback, data = PaiRequest.handle_request(result, info_cache)
+            feedback, data = PaiRequest.handle_request(result, info_cache, config)
             if feedback['EndFile']:
                 try:
                     with open(feedback['path'], 'rb') as f:

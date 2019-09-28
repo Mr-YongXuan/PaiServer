@@ -11,7 +11,7 @@ import mimetypes
 
 import PaiCommon as cfg
 
-def handle_request(header, info_cache):
+def handle_request(header, info_cache, config):
     feedback = {}
     file_range = []
     dict_header = {}
@@ -51,7 +51,7 @@ def handle_request(header, info_cache):
       file_range.append(int(dict_header['Range'].split('bytes=')[1].split('-')[1]))
     
     #调用文件读取 封装基本响应头部
-    result = handle_file(common[1], common[0], file_range, info_cache)
+    result = handle_file(common[1], common[0], file_range, info_cache, config)
     response += " %s %s\n" %(result['code'], cfg.CodeList[result['code']])
     response += "Server: %s %s\n" %(cfg.ServerName, cfg.ServerVer)
     response += "Date: %s\n" % time.strftime('%a, %d %b %Y %H:%M:%S GMT' ,time.gmtime())
@@ -76,12 +76,12 @@ def handle_request(header, info_cache):
       response += result['data']
     return feedback, response
 
-def handle_file(path, method, file_range, info_cache):
+def handle_file(path, method, file_range, info_cache, config):
     file_info = {}
     file_info['options'] = []
-    path = os.path.join(cfg.RootPath, path[1:])
+    path = os.path.join(cfg.HttpServer[config]['RootPath'], path[1:])
     if os.path.isdir(path):
-        for index in cfg.IndexPage:
+        for index in cfg.HttpServer[config]['IndexPage']:
           t_path = os.path.join(path, index)
           if os.path.exists(t_path):
             path = t_path

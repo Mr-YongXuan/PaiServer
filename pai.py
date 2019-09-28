@@ -6,5 +6,7 @@
 '''
 
 import PaiCore
+import PaiCommon as cfg
 
-run = PaiCore.RunCore(8, '127.0.0.1', 80)
+for configure in cfg.HttpServer:
+    PaiCore.RunCore(cfg.Processes, configure)
